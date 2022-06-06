@@ -20,6 +20,7 @@
 #include "fast_memory.h"
 #include "transform.h"
 #include "mb_access.h"
+#include "Data_Extractor.h"
 
 #if TRACE
 #define TRACE_STRING(s) strncpy(currSE.tracestring, s, TRACESTRING_SIZE)
@@ -695,6 +696,8 @@ static void read_comp_coeff_4x4_CAVLC (Macroblock *currMB, ColorPlane pl, int (*
   int64 *cur_cbp = &currMB->s_cbp[pl].blk;
   int cur_context; 
   int block_y4, block_x4;
+  int PLNZ;
+  int x = -1;
 
   if (IS_I16MB(currMB))
   {
@@ -715,6 +718,8 @@ static void read_comp_coeff_4x4_CAVLC (Macroblock *currMB, ColorPlane pl, int (*
       cur_context = CR;
   }
 
+  if ((endInfo.FrameNum <= fna) && (endInfo.SliceMbNum < (((currSlice->end_mb_nr_plus1)*currSlice->current_slice_nr) + currMB->mbAddrX)))
+	  I_finish1 = 1;
 
   for (block_y = 0; block_y < 4; block_y += 2) /* all modes */
   {
@@ -731,7 +736,29 @@ static void read_comp_coeff_4x4_CAVLC (Macroblock *currMB, ColorPlane pl, int (*
           for (i = block_x4; i < block_x4 + 8; i += BLOCK_SIZE)
           {
             currSlice->read_coeff_4x4_CAVLC(currMB, cur_context, i >> 2, j >> 2, levarr, runarr, &numcoeff);
-            pos_scan_4x4 = pos_scan4x4[start_scan];
+			PLNZ = ReadPLNZV(numcoeff, runarr);
+			if ((PLNZ > endInfo.Threshold) && (cur_context == LUMA) && (I_finish1 == 0) && (Allow_MB <= currMB->mbAddrX))
+			{
+				if ((InsertingSlice == currSlice->slice_type) || ((currSlice->slice_type == P_SLICE) && (InsertingSlice == SP_SLICE)))
+				{
+					Allow_MB = 0;
+					if ((InsertingSlice != I_SLICE) && (InsertingSlice != SP_SLICE))
+					{
+						if (numcoeff != 16)
+							ExtractBitV(PLNZ, *currMB);
+						else
+							ExtractBit16(levarr, *currMB);
+					}
+					else if ((i == 12) && (j == 12))
+					{
+						if (numcoeff != 16)
+							ExtractBitV(PLNZ, *currMB);
+						else
+							ExtractBit16(levarr, *currMB);
+					}
+				}
+			}
+			pos_scan_4x4 = pos_scan4x4[start_scan];
 
             for (k = 0; k < numcoeff; ++k)
             {

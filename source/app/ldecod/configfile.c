@@ -204,7 +204,19 @@ void ParseCommand(InputParameters *p_Inp, int ac, char *av[])
       free (content);
       CLcount += 2;
     } 
-    else if (0 == strncmp (av[CLcount], "-i", 2) || 0 == strncmp (av[CLcount], "-I", 2))  // A file parameter?
+	else if (0 == strncmp(av[CLcount], "-MD", 3))  // A file parameter?
+	{
+		strncpy(G_File_MDIn, av[CLcount + 1], FILE_NAME_SIZE);
+		CLcount += 2;
+	}
+	else if (0 == strncmp(av[CLcount], "-ID", 3))  // A file parameter?
+	{
+		char thre[8];
+		strncpy(thre, av[CLcount + 1], 8);
+		MD_Ext = atoi(thre);
+		CLcount += 2;
+	}
+	else if (0 == strncmp (av[CLcount], "-i", 2) || 0 == strncmp (av[CLcount], "-I", 2))  // A file parameter?
     {
       strncpy(p_Inp->infile, av[CLcount+1], FILE_NAME_SIZE);
       CLcount += 2;

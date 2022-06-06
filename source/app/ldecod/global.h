@@ -50,6 +50,34 @@ extern char errortext[ET_SIZE]; //!< buffer for error message for exit with erro
 struct pic_motion_params_old;
 struct pic_motion_params;
 
+SliceType InsertingSlice;
+FILE *Input_File;
+unsigned char MD_Buffer;
+FILE *Output_MD;
+unsigned char G_File_MDIn[256];
+int MD_NUM, EMD_NUM;
+int Err;
+int MD_State;
+unsigned int fna;
+int Allow_MB;
+int BitBuffer;
+int I_finish;
+int I_finish1;
+int found;
+unsigned int MD_Ext;
+int processingMode;
+int case4;
+unsigned long int MDSIZE;
+typedef struct infos
+{
+	unsigned int FrameNum;
+	int SliceMbNum;
+	unsigned char Threshold;
+	unsigned int MetaDataNum;
+	int FrameType;
+}INFOs;
+INFOs endInfo;
+
 /***********************************************************************
  * T y p e    d e f i n i t i o n s    f o r    J M
  ***********************************************************************

@@ -19,6 +19,7 @@
 #include "win32.h"
 #include "h264decoder.h"
 #include "configfile.h"
+#include "My_Entropy.h"
 
 #define DECOUTPUT_TEST      0
 
@@ -219,6 +220,9 @@ int main(int argc, char **argv)
   int hFileDecOutput0=-1, hFileDecOutput1=-1;
   int iFramesOutput=0, iFramesDecoded=0;
   InputParameters InputParams;
+  unsigned char fileN[256];
+  unsigned char sizeH = 0;
+  int OffsetEnd = 5, BitOffsetEnd = 8;
 
 #if DECOUTPUT_TEST
   hFileDecOutput0 = open(DECOUTPUT_VIEW0_FILENAME, OPENFLAGS_WRITE, OPEN_PERMISSIONS);
@@ -233,6 +237,65 @@ int main(int argc, char **argv)
   Configure(&InputParams, argc, argv);
   //open decoder;
   iRet = OpenDecoder(&InputParams);
+  Input_File = fopen(InputParams.infile, "rb");
+  InsertingSlice = Find_Slice_type(Input_File, fileN);
+  fseek(Input_File, -1, SEEK_END);
+  fread(&sizeH, 1, 1, Input_File);
+
+  fseek(Input_File, (sizeH * -1), SEEK_END);
+  fread(fileN, 1, 5, Input_File);
+  if ((fileN[1] == 0x0) && (fileN[2] == 0x0) && (fileN[3] == 0x1) && (fileN[4] == 28))
+  {
+	  for (int j = 5; j <= sizeH; j++)
+	  {
+		  fread(&fileN[j], 1, 1, Input_File);
+		  if ((fileN[j - 2] == 0) && (fileN[j - 1] == 0) && (fileN[j] == 3))
+		  {
+			  fread(&fileN[j], 1, 1, Input_File);
+			  sizeH--;
+		  }
+	  }
+	  endInfo.FrameNum = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.SliceMbNum = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.Threshold = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.MetaDataNum = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.FrameType = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
+  }
+  else
+  {
+	  fprintf(stderr, "NMI\n");
+	  return 0;
+  }
+  if (endInfo.FrameType == 0)
+	  InsertingSlice = B_SLICE;
+  else if (endInfo.FrameType == 1)
+	  InsertingSlice = I_SLICE;
+  else if (endInfo.FrameType == 2)
+	  InsertingSlice = P_SLICE;
+  else if (endInfo.FrameType == 3)
+	  InsertingSlice = SP_SLICE; //limited P
+
+  if ((endInfo.Threshold < 1) || (endInfo.Threshold > 14))
+  {
+	  fprintf(stderr, "HMH\n");
+	  return 0;
+  }
+  if (MD_Ext >= endInfo.MetaDataNum)
+  {
+	  fprintf(stderr, "NIWID\n");
+	  return 0;
+  }
+
+  iRet = OpenDecoder(&InputParams);
+  if (iRet != DEC_OPEN_NOERR)
+  {
+	  fprintf(stderr, "Open encoder failed: 0x%x!\n", iRet);
+	  return -1; //failed;
+  }
+
+  Output_MD = fopen(G_File_MDIn, "wb");
+  BitBuffer = 0;
+
   if(iRet != DEC_OPEN_NOERR)
   {
     fprintf(stderr, "Open encoder failed: 0x%x!\n", iRet);
@@ -243,6 +306,15 @@ int main(int argc, char **argv)
   do
   {
     iRet = DecodeOneFrame(&pDecPicList);
+	if (Err != 0)
+	{
+		fprintf(stderr, "Extprocess: %d\n", Err);
+		break;
+	}
+	fna++;
+	if (I_finish)
+		break;
+
     if(iRet==DEC_EOS || iRet==DEC_SUCCEED)
     {
       //process the decoded picture, output or display;
@@ -259,6 +331,7 @@ int main(int argc, char **argv)
   iRet = FinitDecoder(&pDecPicList);
   iFramesOutput += WriteOneFrame(pDecPicList, hFileDecOutput0, hFileDecOutput1 , 1);
   iRet = CloseDecoder();
+  fclose(Output_MD);
 
   //quit;
   if(hFileDecOutput0>=0)
@@ -271,6 +344,8 @@ int main(int argc, char **argv)
   }
 
   printf("%d frames are decoded.\n", iFramesDecoded);
+  fprintf(stderr, "Completed.");
+
   return 0;
 }
 

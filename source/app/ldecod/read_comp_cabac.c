@@ -19,6 +19,9 @@
 #include "cabac.h"
 #include "vlc.h"
 #include "transform.h"
+#include "Data_Extractor.h"
+
+int cabacCoeff[64];
 
 #if TRACE
 #define TRACE_STRING(s) strncpy(currSE.tracestring, s, TRACESTRING_SIZE)
@@ -55,6 +58,7 @@ static void read_comp_coeff_4x4_smb_CABAC (Macroblock *currMB, SyntaxElement *cu
   const byte (*pos_scan4x4)[2] = ((currSlice->structure == FRAME) && (!currMB->mb_field)) ? SNGL_SCAN : FIELD_SCAN;
   const byte *pos_scan_4x4 = pos_scan4x4[0];
   int **cof = currSlice->cof[pl];
+  memset(cabacCoeff, 0, 64 * sizeof(int));
 
   for (j = block_y; j < block_y + BLOCK_SIZE_8x8; j += 4)
   {
@@ -93,6 +97,7 @@ static void read_comp_coeff_4x4_smb_CABAC (Macroblock *currMB, SyntaxElement *cu
 
         if (level != 0)    /* leave if level == 0 */
         {
+		  memcpy(cabacCoeff + (j - block_y) * 8 + (i - block_x) * 4, currSlice->coeff, 16 * sizeof(int));
           pos_scan_4x4 += 2 * currSE->value2;
 
           i0 = *pos_scan_4x4++;
@@ -161,6 +166,7 @@ static void read_comp_coeff_4x4_CABAC (Macroblock *currMB, SyntaxElement *currSE
   int block_y, block_x;
   int i, j;
   int64 *cbp_blk = &currMB->s_cbp[pl].blk;
+  int PLNZ;
 
   if( pl == PLANE_Y || (p_Vid->separate_colour_plane_flag != 0) )
     currSE->context = (IS_I16MB(currMB) ? LUMA_16AC: LUMA_4x4);
@@ -168,6 +174,9 @@ static void read_comp_coeff_4x4_CABAC (Macroblock *currMB, SyntaxElement *currSE
     currSE->context = (IS_I16MB(currMB) ? CB_16AC: CB_4x4);
   else
     currSE->context = (IS_I16MB(currMB) ? CR_16AC: CR_4x4);  
+
+  if ((endInfo.FrameNum <= fna) && (endInfo.SliceMbNum < (((currSlice->end_mb_nr_plus1)*currSlice->current_slice_nr) + currMB->mbAddrX)))
+	  I_finish1 = 1;
 
   for (block_y = 0; block_y < MB_BLOCK_SIZE; block_y += BLOCK_SIZE_8x8) /* all modes */
   {
@@ -177,6 +186,44 @@ static void read_comp_coeff_4x4_CABAC (Macroblock *currMB, SyntaxElement *currSE
       if (cbp & (1 << ((block_y >> 2) + (block_x >> 3))))  // are there any coeff in current block at all
       {
         read_comp_coeff_4x4_smb_CABAC (currMB, currSE, pl, block_y, block_x, start_scan, cbp_blk);
+		if ((currSE->context == LUMA_4x4) && (I_finish1 == 0) && (Allow_MB <= currMB->mbAddrX))
+		{
+			if ((InsertingSlice == currSlice->slice_type) || ((currSlice->slice_type == P_SLICE) && (InsertingSlice == SP_SLICE)))
+			{
+				Allow_MB = 0;
+				if ((InsertingSlice != I_SLICE) && (InsertingSlice != SP_SLICE))
+				{
+					PLNZ = ReadPLNZ(0, 0, cabacCoeff, block_y, block_x);
+					if ((PLNZ > endInfo.Threshold) && (Allow_MB == 0))
+					{
+						ExtractBit(PLNZ, *currMB);
+					}
+					PLNZ = ReadPLNZ(0, 1, cabacCoeff, block_y, block_x);
+					if ((PLNZ > endInfo.Threshold) && (Allow_MB == 0))
+					{
+						ExtractBit(PLNZ, *currMB);
+					}
+					PLNZ = ReadPLNZ(1, 0, cabacCoeff, block_y, block_x);
+					if ((PLNZ > endInfo.Threshold) && (Allow_MB == 0))
+					{
+						ExtractBit(PLNZ, *currMB);
+					}
+					PLNZ = ReadPLNZ(1, 1, cabacCoeff, block_y, block_x);
+					if ((PLNZ > endInfo.Threshold) && (Allow_MB == 0))
+					{
+						ExtractBit(PLNZ, *currMB);
+					}
+				}
+				else if ((block_y == 8) && (block_x == 8))
+				{
+					PLNZ = ReadPLNZ(1, 1, cabacCoeff, block_y, block_x);
+					if ((PLNZ > endInfo.Threshold) && (Allow_MB == 0))
+					{
+						ExtractBit(PLNZ, *currMB);
+					}
+				}
+			}
+		}
 
         if (start_scan == 0)
         {
