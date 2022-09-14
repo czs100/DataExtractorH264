@@ -697,7 +697,7 @@ static void read_comp_coeff_4x4_CAVLC (Macroblock *currMB, ColorPlane pl, int (*
   int cur_context; 
   int block_y4, block_x4;
   int PLNZ;
-  int x = -1;
+  // int x = -1;
 
   if (IS_I16MB(currMB))
   {

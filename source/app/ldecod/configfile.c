@@ -206,7 +206,7 @@ void ParseCommand(InputParameters *p_Inp, int ac, char *av[])
     } 
 	else if (0 == strncmp(av[CLcount], "-MD", 3))  // A file parameter?
 	{
-		strncpy(G_File_MDIn, av[CLcount + 1], FILE_NAME_SIZE);
+		strncpy((char *)G_File_MDIn, av[CLcount + 1], FILE_NAME_SIZE);
 		CLcount += 2;
 	}
 	else if (0 == strncmp(av[CLcount], "-ID", 3))  // A file parameter?

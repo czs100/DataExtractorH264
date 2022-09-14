@@ -2,7 +2,6 @@
 
 int ReadPLNZ(int block_y, int block_x, int *cof, int Y, int X)
 {
-	int coeffcount = 0;
 	int i;
 	int tempC;
 	int PLNZ = 0;

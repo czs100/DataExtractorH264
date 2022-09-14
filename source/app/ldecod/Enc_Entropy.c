@@ -15,9 +15,9 @@ int ReadExpGlomb(char *Bit_stream, int *Offset, int *Bit_offset_to_go)
 	*Offset = i;
 	return Output + (int)pow(2, M) - 1;
 }
-boolean ReadFlag(char *Bit_stream, int *Offset, int *Bit_offset_to_go)
+Boolean ReadFlag(char *Bit_stream, int *Offset, int *Bit_offset_to_go)
 {
-	boolean Output;
+	Boolean Output;
 	int i = *Offset;
 	if (*Bit_offset_to_go == 0)
 	{

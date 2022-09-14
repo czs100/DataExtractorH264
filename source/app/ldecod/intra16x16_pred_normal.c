@@ -145,7 +145,7 @@ static int intra16x16_vert_pred(Macroblock *currMB, ColorPlane pl)
   }
 
   if (!up_avail)
-    error ("invalid 16x16 intra pred Mode VERT_PRED_16",500);
+    error ("222 invalid 16x16 intra pred Mode VERT_PRED_16",500);
   {
     imgpel **prd = &currSlice->mb_pred[pl][0];
     imgpel *src = &(imgY[b.pos_y][b.pos_x]);

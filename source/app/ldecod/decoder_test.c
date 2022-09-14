@@ -255,11 +255,11 @@ int main(int argc, char **argv)
 			  sizeH--;
 		  }
 	  }
-	  endInfo.FrameNum = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
-	  endInfo.SliceMbNum = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
-	  endInfo.Threshold = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
-	  endInfo.MetaDataNum = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
-	  endInfo.FrameType = ReadExpGlomb(fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.FrameNum = ReadExpGlomb((char *)fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.SliceMbNum = ReadExpGlomb((char *)fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.Threshold = ReadExpGlomb((char *)fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.MetaDataNum = ReadExpGlomb((char *)fileN, &OffsetEnd, &BitOffsetEnd);
+	  endInfo.FrameType = ReadExpGlomb((char *)fileN, &OffsetEnd, &BitOffsetEnd);
   }
   else
   {
@@ -293,7 +293,7 @@ int main(int argc, char **argv)
 	  return -1; //failed;
   }
 
-  Output_MD = fopen(G_File_MDIn, "wb");
+  Output_MD = fopen((char *)G_File_MDIn, "wb");
   BitBuffer = 0;
 
   if(iRet != DEC_OPEN_NOERR)
